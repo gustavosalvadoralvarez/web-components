@@ -31,7 +31,7 @@ Example:
   </style>
 
   <template>
-    <section id="progressive-form-body"></section>
+    <section id="progressive-form-body">
       <paper-input class='text-input'
                    attr-for-value="selected"
                    label="{{currentInput.label}}" 
@@ -64,6 +64,7 @@ Example:
             <paper-radio-button name$="{{item}}">{{item}}</paper-radio-button>
         </template>
       </paper-radio-group>
+    </section>
   </template>
 </dom-module>
 
@@ -98,22 +99,42 @@ Example:
       self = this; 
       self.inputs = inputs = self.inputs || utils.JSON.import(self.import); 
       self.currentInput = utils.labeledChild(inputs);
-      self.initCurrentInputEl(); 
+    
     },
 
-    initCurrentInputEl: function (){
-      var self, formBody, inputSpec, el; 
+    currentInputEl: function (){
+      var self; 
+      self = this; 
+      return self.$$('.'+ self.currentInput.inputType + '-input')
+    },
+
+    detachCurrentInputEl: function (){
+      var self;
       self = this;
-      formBody = self.$$('#progressive-form-body'); 
-      inputSpec = self.currentInput;
-      el = hiddenEL().cloneNode(true);
-      el.setAttribute('hidden', 'false');
-      formBody.innerHTML = "";
-      formBody.appendChild(el); 
-      function hiddenEl(){
-        return self.$$('.'+inputSpec.inputType+'-input[hidden="true"]'); 
+      self.currentInputEl().setAttribute('hidden', 'true'); 
+    },
+
+    attachCurrentInputEl: function (){
+      var self; 
+      self = this;
+      self.currentInputEl().setAttribute('hidden', 'false'); 
+    },
+
+    gatherCurrentSelection: function (){
+      var self inputEl; 
+      self = this;
+      switch(self.currentInput.inputType){
+        case "text":
+          return self.currentInputEl().value;
+        case "textarea":
+          return self.currentInputEl().value;
+        case "select":
+          return self.currentInputEl().selected;
+        case "date": 
+          return self.currentInputEl().date;
       }
-    }
+    },
+
   });
 
 </script>
