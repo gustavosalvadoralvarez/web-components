@@ -69,8 +69,10 @@ utils.range = range;
 
 function labeledChild(obj, label){
 	var labelKey, labelVal, child; 
+	console.log(obj);
 	labelKey = label || 'label'; 
 	labelVal = Object.keys(obj)[0]; 
+	console.log(Object.keys(obj));
 	child = obj[labelVal]; 
 	child[labelKey] = labelVal; 
 	return child

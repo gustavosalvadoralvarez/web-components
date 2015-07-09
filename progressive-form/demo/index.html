@@ -15,22 +15,9 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <title>progressive-form Demo</title>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
     <link rel="import" href="../progressive-form.html">
+    <link rel="import" href="./inputs.json" id="demo-inputs">
   </head>
   <body>
-
-    <p>An example of <code>&lt;progressive-form&gt;</code>:</p>
-
-    <button>Say Something</button>
-
-    <progressive-form author='{"name": "Lord Meowser", "image": "http://placekitten.com/g/200/300"}' fancy>
-      <h2>Hello progressive-form</h2>
-    </progressive-form>
-
-    <script>
-      document.querySelector('button').addEventListener('click', function() {
-        alert(document.querySelector('progressive-form').sayHello('Hallo!'));
-      });
-    </script>
-
+    <progressive-form import="#demo-inputs"></progressive-form>
   </body>
 </html>

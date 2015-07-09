@@ -1,9 +1,9 @@
 {
 	"Name": { 
-		"type": "text",
+		"inputType": "text",
 		"next": {
 			"Menu": {
-				"type": "select",
+				"inputType": "select",
 				"options": [
 					"hamburger",
 					"pizza",
@@ -11,7 +11,7 @@
 				],
 				"next": {
 					"Add-ons": {
-						"type": "select", 
+						"inputType": "select", 
 						"options": {
 							"hamburger": [
 								"fries"
