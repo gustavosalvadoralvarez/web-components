@@ -1,0 +1,119 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+
+<script src="./lib/utils.js"></script>
+
+<!--
+An element providing a solution to no problem in particular.
+
+Example:
+
+    <progressive-form></progressive-form>
+
+@demo
+-->
+<dom-module id="progressive-form">
+
+  <style>
+    :host {
+      display: block;
+      box-sizing: border-box;
+    }
+  </style>
+
+  <template>
+    <section id="progressive-form-body"></section>
+      <paper-input class='text-input'
+                   attr-for-value="selected"
+                   label="{{currentInput.label}}" 
+                   required="true"
+                   on-change="validateInput" 
+                   hidden="true" >
+      </paper-input> 
+      <paper-textarea class='textarea-input'
+                      attr-for-value="selected" 
+                      label="{{currentInput.label}}" 
+                      required="true" >
+      </paper-textarea> 
+      <section class="date-input" hidden="true">
+        <paper-button class="btn" on-tap="toggleDate" 
+                raised>Choose Date</paper-button>
+        <span>[[state.value]]</span>
+        <paper-dialog id="dialog" class="paper-date-picker-dialog" modal on-iron-overlay-closed="validateInput">
+          <paper-date-picker id="campaign-date" responsive-width="655px"></paper-date-picker>
+          <div class="buttons">
+            <paper-button dialog-dismiss>Cancel</paper-button>
+            <paper-button dialog-confirm>OK</paper-button>
+          </div>
+        </paper-dialog>
+      </section>
+      <paper-radio-group  class="select-input" 
+                          attr-for-selected="name" 
+                          on-iron-select="validateInput"
+                          hidden="true">
+        <template is="dom-repeat" items="{{currentInput.options}}">
+            <paper-radio-button name$="{{item}}">{{item}}</paper-radio-button>
+        </template>
+      </paper-radio-group>
+  </template>
+</dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'progressive-form',
+
+    properties: {
+      import: {
+        type: String
+      },
+      inputs: {
+        type: Object
+      },
+      selections: {
+        type: Array,
+        notify: true,
+        value: function () { return [] }
+      },
+      currentInput: {
+        type: Object,
+        notify: true
+      },
+    },
+
+    // Element Lifecycle
+
+    attached: function() {
+      var self, inputs; 
+      self = this; 
+      self.inputs = inputs = self.inputs || utils.JSON.import(self.import); 
+      self.currentInput = utils.labeledChild(inputs);
+      self.initCurrentInputEl(); 
+    },
+
+    initCurrentInputEl: function (){
+      var self, formBody, inputSpec, el; 
+      self = this;
+      formBody = self.$$('#progressive-form-body'); 
+      inputSpec = self.currentInput;
+      el = hiddenEL().cloneNode(true);
+      el.setAttribute('hidden', 'false');
+      formBody.innerHTML = "";
+      formBody.appendChild(el); 
+      function hiddenEl(){
+        return self.$$('.'+inputSpec.inputType+'-input[hidden="true"]'); 
+      }
+    }
+  });
+
+</script>

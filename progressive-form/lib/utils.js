@@ -67,6 +67,18 @@ function range(ops, args){
 utils.range = range;
 
 
+function labeledChild(obj, label){
+	var labelKey, labelVal, child; 
+	labelKey = label || 'label'; 
+	labelVal = Object.keys(obj)[0]; 
+	child = obj[labelVal]; 
+	child[labelKey] = labelVal; 
+	return child
+}
+
+utils.labeledChild = labeledChild;
+
+
 function csvParser(csvString, headers){
 	var lines = csvString.split('\n')
 		firstLine = lines[0].split(','),
