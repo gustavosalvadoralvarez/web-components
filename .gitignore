@@ -1,1 +1,2 @@
-bower_components
+./csv-dataframe/demo/Mexico.processed.csv
+./csv-dataframe/test/Clientes.csv
