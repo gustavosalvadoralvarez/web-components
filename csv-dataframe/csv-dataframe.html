@@ -51,6 +51,7 @@ Example:
       },
       nrow: Number,
       ncol: Number,
+      storeName: String,
       headers: { 
         type: Boolean,
         reflectToAttribute: true,
@@ -59,31 +60,16 @@ Example:
       store: {
         type: Object
       },
-      dataLoaded: {
-        type: Boolean,
-        value: false,
-        notify: true
+      db: {
+        type: Object
       },
-      view: {
-        type: String,
-        reflectToAttribute: true,
-        oberser: "loadView",
-        value: "none"
-      },
-      data: {
-        type: Object,
-        notify: true
-      },
-
     },
 
     // Element Lifecycle
     attached: function() {
       var self, csvStr, cols, csvData, storeName;
       self = this; 
-      csvStr = self.querySelector("LINK").import.querySelector('BODY').textContent;
-      console.log(csvStr.split('\n').length);
-      
+      csvStr = self.querySelector("LINK").import.querySelector('BODY').textContent;      
       self._extract(csvStr, 
         function(csvArr){
           console.log('Parsed dims:');
@@ -96,18 +82,8 @@ Example:
       );
     },
     // ETL methods
-    _key: function(col){
-      var self;
-      self = this;
-      return (self.name || "csv") + "!" + String(col);
-    },
-    _compress: function(item){
-      return LZString.compress(JSON.stringify(item));
-    },
-    _decompress: function(item){
-      return JSON.parse(LZString.decompress(item));
-    },
     _extract: function(csvString, callback){
+      console.log("Extracting csv data...");
       var self;
       self = this;
       Papa.parse(csvString, {
@@ -123,7 +99,8 @@ Example:
       });
     }, 
     _transform: function(csvArr, callback){
-      var self, cols, levels, fvals;
+      console.log("Transforming csv data...");
+      var self, cols, vals;
       self = this;
       if (self.headers) {
         cols = csvArr[0];
@@ -140,246 +117,132 @@ Example:
       self.ncol = cols.length;
       self.nrow = vals.length;
       return callback(
-        utils.transpose(vals).reduce(
-          function(vob, vs, i){
-            vob[cols[i]] = vs;
-            return vob
-          },
-          {}
+        vals.map(
+          function (v, i){
+            return v.reduce(
+              function (vo, iv, ii){
+                vo[cols[ii]] = iv;
+                return vo
+              },
+              {}
+            )
+          }
         )
       )
     },
     _load: function(vals){
+      console.log("Loading csv data...");
       var self, storeName, cols;
       self = this; 
-      console.log(self);
-      storeName = self.querySelector('LINK').getAttribute('href');
-
+      self.storeName = storeName = self.querySelector('LINK').getAttribute('href');
       if("indexedDB" in window) {
         var openRequest;
-        openRequest = indexedDB.open(storeName,1);
+        console.log("Opening application database...");
+        openRequest = indexedDB.open(document.querySelector("TITLE").textContent,1);
         openRequest.onupgradeneeded = function(e) {
-            console.log("running onupgradeneeded");
-            var store;
-            store = e.target.result;
+          console.log("Upgrading application database...");
+          var db, store, storeName;
+          db = e.target.result;
+          storeName = self.querySelector("LINK").getAttribute("href"); 
+          if (!df.objectStoreNames.contains(storeName)){
+            console.log("Generating objectStore for "+storeName+"...");
+            store = db.createObjectStore(storeName, {autoIncrement: true});
+            console.log("Generating indexes for "+storeName+"..."); 
             self.columns.forEach(
-              function(col){ 
-                if(!store.objectStoreNames.contains(col)) {
-                  store.createObjectStore(col, {autoIncrement: true });
-                  console.log("Creating "+col+" Object Store");
-                }
-
-
+              function generateIndex(k){
+                var kVals, isUnique;
+                kVals = vals.map(utils.getKeyFrom(k)); 
+                isUnique = (utils.unique(kVals).length === kVals.length);
+                store.createIndex(k, k, {unique: isUnique});
+                console.log("   Generated "+(isUnique ? "unique" : "one-to-many")+"index for "+k+".");
               }
-            )
+            ); 
+          }
         }
         openRequest.onsuccess = function(e) {
-          console.log("Database Opened...");
-          var store;
-          self.store = store =  e.target.result;
-          async.eachSeries(
-            self.columns,
-            function (col, callback){
-              console.log("Loading "+col+"...");
-              var objStore, request, colVals;
-              objStore = store.transaction([col], 'readwrite').objectStore(col);
-              request = objStore.add(vals[col]);
-              request.onsuccess = function () { callback() };
-              request.onerror = function (e) { callback(e) }
-            },
-            function (err){
-              if (err){ 
-                console.log(err); 
-              }
-              self.fire('data-loaded'); 
-              self.dataLoaded = true;
-              console.log('Data loaded!');
+          console.log("Application database ready!");
+          var db, sn;
+          db = e.target.result;
+          sn = storeName;
+          function readTxn(){
+            return db.transaction([sn], 'read').objectStore(sn)
+          }
+          function writeTxn(){
+            return db.transaction([sn], 'readwrite').objectStore(sn)
+          }
+          function readError(e){
+            console.log("Database Read Error: ");
+            console.log(e);
+            return null
+          }
+          self.store = {
+            read: {
+              key: function(k, cb){
+                var req;
+                req = readTxn().get(k);
+                req.onsuccess = callback;
+                req.onerror = readError;
+              },
+              index: function(ix, v, cb){
+                var ixTxn, req;
+                ixTxn = readTxn().index(ix);
+                if (!(typeof v == 'object')){
+                  req = ixTxn.get(v);
+                }else{
+                  console.log("Invalid value received by store.read.index: ");
+                  console.log(JSON.stringify(v));
+                  return
+                }
+                req.onsuccess = cb;
+                req.onerror = readError;
+                return
+                // function boundReq(bounds, cb){
+                //   var lb, up, range;
+                //   lb = bounds.lower;
+                //   ub = bounds.upper;
+                //   if (lb && ub){
+                //     range = IDBKeyRange.bound(lb, ub);
+                //   }else if (lb){
+                //     range = IDBRange.lowerBound(lb, true);
+                //   } else if (ub){
+                //     range = IDBRange.upperBound(ub, true)
+                //   }else {
+                //     console.log("No upper or lower bounds provided for store.read.range");
+                //   }
+
+                // }
             }
-          )
+          },
+          write: function(vals, callback){
+            var txn;
+            vals = utils.asArray(vals);
+            txn = writeTxn();
+            async.eachSeries(
+              vals,
+              function (v, cb){
+                var req;
+                req = txn.add(v);
+                req.onsuccess = function(){ cb() }
+                req.onerror = function(e){ cb(e) }
+              },
+              function (err){
+                if (err){
+                  console.log("Database Write Error: ");
+                  console.log(e);
+                  console.log(JSON.stringify(vals));
+                  return
+                }
+                callback();
+              }
+            )
+          }
         }
-        openRequest.onerror = function(e) {
-            console.log("Error");
-            console.dir(e);
-        }
+      } 
+      openRequest.onerror = function(e) {
+        console.log("Application database open error:");
+        console.dir(e);
       }
     },
-    // retrieveSubset: function(rows, cols){
-    //   var self;
-    //   self = this; 
-    //   cols = cols || self.columns;
-
-    //   if (rows && !Array.isArray(rows)){
-    //     var colNums, rCols, colParams, scols; 
-    //     scols = self.columns;
-    //     rCols = Object.keys(rows);
-    //     colNums = rCols.map(scols.indexOf);
-    //     colParams = rCols.map(utils.getFrom(rows));
-    //     utils.range(self.nrows).reduce(
-    //       function (subset, rNum){
-    //         var r, i;
-    //         r = self._retrieveItem(rNum);
-    //         i = 0;
-    //         for (; i < colNums.length; i++){
-    //           if(!(r[i] == colParams[i])){
-    //             return subset
-    //           }
-    //         }
-    //         return subset.concat(r);
-    //       },
-    //       [])
-    //   }
-    //   rows = rows || range(self.nrow); 
-    //   return scols.concat(rows.map(self._retrieveItem).map(utils.keyMap(cols)));
-    // }
-    // _transform: function(csvArr, callback){
-    //   var self, cols, vals, transformed;
-    //   self = this;
-    //   if (self.headers) {
-    //     cols = csvArr[0];
-    //     vals = utils.transpose(csvArr.slice(1));
-    //   } else {
-    //     cols = utils.range(csvArr[0].length).map(
-    //       function (v){
-    //         return "X."+String(v);
-    //       }
-    //     ); 
-    //     vals = utils.transpose(csvArr);
-    //   }
-    //   return callback(
-    //     vals.reduce(
-    //       function(p, c, i){
-    //         p[cols[i]] = c;
-    //         return p
-    //       },
-    //       {}
-    //     )
-    //   )
-    // }, 
-    // _load: function(csvData){
-    //   var self, _key, store;
-    //   self = this;
-    //   _key = self._key;
-    //   store = self.store;
-    //   Object.keys(csvData).forEach(
-    //     function (col, i) {
-    //       console.log("Loading: "+col);
-    //       store[self._key(col)] = self._compress(csvData[col])
-    //     }
-    //   ); 
-    //   self.fire('data-loaded'); 
-    //   self.dataLoaded = true;
-    // },
-    // JS API Methods 
-    // subsetCols: function(cols){
-    //   var self, get, key;
-    //   self = this;
-    //   _key = self._key
-    //   return cols.reduce(
-    //     function (ro, col) {
-    //       ro[col] = self._decompress(self.store.getItem(_key(col)));
-    //       return ro
-    //     },
-    //     {}
-    //   )
-    // },
-    // subsetRows: function(rexp, csvData){
-    //   var self, rrange, mapFn;
-    //   self = this;
-    //   csvData = csvData || self.subsetCols(self.columns);
-    //   rrange = utils.range(self.nrow);
-    //   if(Array.isArray(rexp)){
-    //     var rmin, rmax;
-    //     rmin = rexp[0];
-    //     rmax = rexp[1];
-    //     mapFn = utils.booleanMap(
-    //       rrange.map(
-    //         function(r, i){
-    //           return (i >= rmin && i <= rmax)
-    //         }
-    //       )
-    //     )
-    //   } else{
-    //     mapFn = utils.booleanMap(
-    //       rrange.map(
-    //         function(r, i){
-    //           var c;
-    //           for(c in csvData){
-    //             if (csvData[c][r] == rexp[c]){
-    //               return true
-    //             }
-    //           }
-    //           return false
-    //         }
-    //       )
-    //     );
-    //   }
-    //   return Object.keys(csvData).reduce(
-    //     function (d, c){
-    //       d[c] = mapFn(csvData[c]);
-    //       return d
-    //     }, 
-    //     {}
-    //   )
-    // },
-    // load: function(rows, cols){
-    //   var self;
-    //   self = this;
-    //   console.log(utils.asArray(cols));
-
-    //   if (arguments.length === 1){
-    //     cols = rows;
-    //     return self.get(utils.asArray(cols));
-    //   }
-    //   return self.subsetRows(rows, self.subsetCols(utils.asArray(cols)))
-    // },
-    // // DOM API methods
-    // loadView: function(){
-    //   var self, viewParams, rows, cols, format, load;
-    //   self = this;
-    //   if (!self.view || self.view === 'none'){
-    //     return {'error': 'no view set to load'}
-    //   }
-    //   viewParams = self.view.split(";");
-    //   rows = JSON.parse(viewParams[0]);
-    //   cols = JSON.parse(viewParams[1]);
-    //   format = viewParams[2] || null;
-    //   load = self.load(rows, cols); 
-    //   switch(format){
-    //     case 'row-wise':
-    //       self.data = utils.transpose(
-    //         cols.reduce(
-    //           function(larr, c){
-    //           return larr.concat(load[c])
-    //           }, 
-    //           []
-    //         )
-    //       ).map(
-    //           function(r){
-    //             return r.reduce(
-    //               function(ro, v, i){
-    //                 ro[cols[i]] = v;
-    //                 return ro
-    //               },
-    //               {}
-    //             )
-    //           }
-    //         )
-    //     break;
-    //     case 'matrix': 
-    //        self.data = utils.transpose(
-    //         cols.reduce(
-    //           function(larr, c){
-    //           return larr.concat(load[c])
-    //           }, 
-    //           []
-    //         )
-    //       ) 
-    //     break;
-    //     default:
-    //       self.data = load; 
-    //   }
-    // }
-
   });
 
 </script>
