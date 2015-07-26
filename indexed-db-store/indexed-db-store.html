@@ -1,0 +1,277 @@
+<!--
+@license
+Copyright (c) 2015 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+-->
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+An element providing a solution to no problem in particular.
+
+Example:
+
+    <indexed-db></indexed-db>
+
+@demo
+-->
+<dom-module id="indexed-db">
+
+  <style>
+    :host {
+      display: block;
+      box-sizing: border-box;
+    }
+
+    .author img {
+      float: left;
+      margin-right: 5px;
+      max-height: 100px;
+      max-width: 100px;
+    }
+  </style>
+
+  <template>
+    <h1>&lt;indexed-db&gt;</h1>
+    <content></content>
+    <p class="author">
+      <img src="{{author.image}}">
+      Cheers,<br/>
+      <span class="name">{{author.name}}</span>
+    </p>
+  </template>
+
+</dom-module>
+
+<script>
+
+  Polymer({
+
+    is: 'indexed-db',
+
+    properties: {
+      columns:{
+        type: Array
+      },
+      nrow: Number,
+      ncol: Number,
+      storeName: String,
+      headers: { 
+        type: Boolean,
+        reflectToAttribute: true,
+        value: true
+      },
+      store: {
+        type: Object
+      },
+      db: {
+        type: Object
+      },
+    },
+
+    // Element Lifecycle
+    attached: function() {
+      console.log("Dataframe attached...");
+      var self, csvStr, cols, dataStr, storeName;
+      self = this; 
+      dataStr = self.querySelector("LINK").import.querySelector('BODY').textContent;      
+      self._extract(dataStr, 
+        function(csvArr){
+          console.log('Parsed dims:');
+          console.log(csvArr[0].length);
+          console.log(csvArr.length);
+          var load;
+          load = self._load.bind(self);
+          self._transform(csvArr, load);
+        }
+      );
+    },
+    // ETL methods
+    _extract: function(callback){
+      console.log("Extracting data...");
+      var self, importEl, dataStr, ext;
+      self = this;
+      importEl = self.querySelector("LINK");
+      dataStr = importEl.import.querySelector('BODY').textContent; 
+      switch(utils.extensionName(importEl.getAttribute('href'))): 
+        case 'csv': 
+          Papa.parse(
+            dataStr, 
+            {
+              complete: function(res){
+                if (res.errors.length > 0){
+                  console.log("Parsing Error:");
+                  console.log(res.errors);
+                  callback(err)
+                  return 
+                }
+                console.log(res);
+                return callback(null,
+                    {
+                    format: 'csv',
+                    data: res.data
+                  }
+                );
+              }
+            }
+          );
+        break; 
+        case 'json': 
+          callback(null, JSON.parse(dataStr));
+        break; 
+        default: 
+          console.log("No valid data format detected. Known formats are:\n\t.csv .json");
+          callback((new Error("Invalid data format")));
+    }, 
+    _transform: function(dataArr, callback){
+      console.log("Transforming csv data...");
+      var self, cols, vals;
+      self = this;
+      if (self.headers) {
+        cols = csvArr[0];
+        vals = csvArr.slice(1);
+      } else {
+        cols = utils.range(csvArr[0].length).map(
+          function (v){
+            return "X."+String(v);
+          }
+        ); 
+        vals = csvArr;
+      }
+      self.columns = cols; 
+      self.ncol = cols.length;
+      self.nrow = vals.length;
+      return callback(
+        vals.map(
+          function (v, i){
+            return v.reduce(
+              function (vo, iv, ii){
+                vo[cols[ii]] = iv;
+                return vo
+              },
+              {}
+            )
+          }
+        )
+      )
+    },
+    _load: function(vals){
+      console.log("Loading csv data...");
+      var self, storeName, cols;
+      self = this; 
+      self.storeName = storeName = self.querySelector('LINK').getAttribute('href');
+      if("indexedDB" in window) {
+        var openRequest;
+        console.log("Opening application database...");
+        openRequest = indexedDB.open(document.querySelector("TITLE").textContent,1);
+        openRequest.onupgradeneeded = function(e) {
+          console.log("Upgrading application database...");
+          var db, store, storeName, colNames;
+          db = e.target.result;
+          storeName = self.querySelector("LINK").getAttribute("href"); 
+          if (!db.objectStoreNames.contains(storeName)){
+            console.log("Generating objectStore for "+storeName+"...");
+            store = db.createObjectStore(storeName, {autoIncrement: true});
+            console.log("Generating indexes for "+storeName+"..."); 
+            colNames = self.columns;
+            colNames.forEach(
+              function generateIndex(k){
+                var kVals, isUnique;
+                kVals = vals.map(utils.getKeyFrom(k)); 
+                isUnique = (utils.unique(kVals).length === kVals.length);
+                store.createIndex(k, k, {unique: isUnique});
+                console.log("   Generated "+(isUnique ? "unique" : "one-to-many")+"index for "+k+".");
+              }
+            ); 
+            async.eachSeries(
+              vals,
+              function (row, cb){
+                var rObj;
+                rObj = row.reduce(
+                  function (ro, v, i){
+                    ro[colNames[i]] = v;
+                    return ro
+                  },
+                  {}
+                ); 
+
+              })
+          }
+        }
+        openRequest.onsuccess = function(e) {
+          console.log("Application database ready!");
+          var db, sn;
+          db = e.target.result;
+          sn = storeName;
+          function readTxn(){
+            return db.transaction([sn], 'read').objectStore(sn)
+          }
+          function writeTxn(){
+            return db.transaction([sn], 'readwrite').objectStore(sn)
+          }
+          function readError(e){
+            console.log("Database Read Error: ");
+            console.log(e);
+            return null
+          }
+          self.store = {
+            read: {
+              key: function(k, cb){
+                var req;
+                req = readTxn().get(k);
+                req.onsuccess = callback;
+                req.onerror = readError;
+              },
+              index: function(ix, v, cb){
+                var ixTxn, req;
+                ixTxn = readTxn().index(ix);
+                if (!(typeof v == 'object')){
+                  req = ixTxn.get(v);
+                }else{
+                  console.log("Invalid value received by store.read.index: ");
+                  console.log(JSON.stringify(v));
+                  return
+                }
+                req.onsuccess = cb;
+                req.onerror = readError;
+                return
+              }
+            },
+            write: function(vals, callback){
+              var txn;
+              vals = utils.asArray(vals);
+              txn = writeTxn();
+              async.eachSeries(
+                vals,
+                function (v, cb){
+                  var req;
+                  req = txn.add(v);
+                  req.onsuccess = function(){ cb() }
+                  req.onerror = function(e){ cb(e) }
+                },
+                function (err){
+                  if (err){
+                    console.log("Database Write Error: ");
+                    console.log(e);
+                    console.log(JSON.stringify(vals));
+                    return
+                  }
+                  callback();
+                }
+              )
+            }
+          }
+        }
+        openRequest.onerror = function(e) {
+          console.log("Application database open error:");
+          console.dir(e);
+        }
+      }
+    }
+
+  });
+
+</script>
