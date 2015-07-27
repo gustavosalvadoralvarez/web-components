@@ -186,6 +186,7 @@ function binaryFilter(binaryArr){
 utils.binaryFilter = binaryFilter; 
 
 
+
 function booleanMap(booleanArr){
 	return function(arr){
 		return arr.reduce(
@@ -202,6 +203,16 @@ function booleanMap(booleanArr){
 
 utils.booleanMap = booleanMap; 
 
+
+function setDiff(arr1, arr2){ 
+	return arr1.concat(arr2).filter(
+		function (v, i){ 
+			return ((arr1.indexOf(v) === -1) || (arr2.indexOf(v) === -1))
+		}
+	)
+}
+
+utils.setDiff = setDiff; 
 
 function labeledChild(obj, label){
 	var labelKey, labelVal, child; 
@@ -360,221 +371,6 @@ function transpose(mx){
 
 utils.transpose = transpose; 
 
-// function rowFilter(v, vi){
-// 	if(vi){
-// 		return function (row){
-// 			return row[vi] === v
-// 		}
-// 	} else {
-// 		return function (row){
-// 			return row.indexOf(v) !== -1
-// 		}
-// 	}
-// }
-
-// utils.rowFilter = rowFilter; 
-
-// function DataFrame(valuesArr, headers){
-// 	var df, columns, values;
-// 	df = {};
-// 	if (headers){
-// 		switch(Array.isArray(headers)){ 
-// 			case true: 
-// 				columns = headers;
-// 				values = valuesArr;
-// 			break;
-// 			default: 
-// 				columns = valuesArr[0]; 
-// 				values = valuesArr.slice(1, valuesArr.length); 	
-// 		} 
-// 	} else {
-// 		columns = range(valuesArr.length).map(
-// 			function (v){
-// 				return "X."+String(v);
-// 			}
-// 		); 
-// 		values = valuesArr;
-// 	}
-// 	df.columns = columns; 
-// 	df.values = values;
-// 	df.dims = [values.length, columns.length]; 
-// 	df.prototype._colIndex = function colIndex(v){ 
-// 		return this.columns.indexOf(v) 
-// 	}
-// 	df.prototype._rows = function _rows(v, vi, vals){
-// 		vals = vals || this.values; 
-// 		return vals.filter(rowFilter(v, vi));
-// 	}
-
-// 	df.prototype._cols = function(cols, vals){
-// 		vals = vals || this.values; 
-// 		return vals.filter(colFIlter(cols, this._colIndex))
-// 	}
-
-// 	df.prototype.view = function (viewexp){
-// 		var exps, rexp, cexp, view;
-// 		exps = viewexp.split(',');
-// 		rexp = exps[0];
-// 		cexp = exps[1] || null; 
-// 		view = 
-// 	}
-
-// 	function rowFilter(v, vi){
-// 		if(vi){
-// 			return function (row){
-// 				return row[vi] === v
-// 			}
-// 		} else {
-// 			return function (row){
-// 				return row.indexOf(v) !== -1
-// 			}
-// 		}
-// 	}
-
-// 	function colFilter(cols, ixFn){
-// 		var colIxs, colKs;
-// 		colKs = cols.map(
-// 			function (c){
-// 				return parseInt(c, 10) || colIndex(c)
-// 			}
-// 		);
-// 		if (!(cols[0] instanceof Number){
-// 			colIxs = cols.map(ixFn);
-// 		}
-// 		return function ( vArr){
-// 			return vArr.filter(v, i){
-// 				colIxs.indexOf(i) !== -1
-// 			}
-// 		}
-// 	}
-
-// 	function getCol(col){
-// 		var colIx;
-// 		colIx = col instanceof Number 
-// 				? col
-// 				: colIndex(col); 
-			
-// 	}
-// 	function parseView
-
-
-// }
-
-// function dataFrame(csvString, ops, dataFrameView){
-// 	var self, columns;
-// 	ops = ops || {};
-// 	function extract(csvString){
-// 		var csvLines, headers, ncol, nrow;
-// 		csvLines = csvString.split("\n").map(invoke("split", ","));
-// 		ncol = csvLines[0].length;
-// 		nrow = csvLines.length;
-// 		if(!ops.noHeaders){
-// 			var hre = /[" ']/g; 
-// 			headers = csvLines[0].map(function(s){ return s.replace(/[" ']/g, '')});
-// 			console.log(headers);
-// 			csvLines = csvLines.slice(1, ncol);
-// 		} else {
-// 			headers = range(ncol).map(String).map(function(v){ return "X."+v });
-// 		}
-// 		return headers.reduce(
-// 			function(r, col, i){
-// 				r[col] = csvLines.map(getFrom(i));
-// 				return r
-// 			},
-// 			{}
-// 		);
-// 	} 
-// 	function getRows(d, s, e, cs){
-// 		return (cs || Object.keys(d)).reduce(
-// 			function (r, cl, i){
-// 				r[cl] = d[cl].slice(e, s);
-// 				return r
-// 			},
-// 			{}
-// 		)
-// 	}
-// 	function filterRowsBy(d, cc, cfn, cs){ 
-// 		cs = cs || Object.keys(d);
-// 		return d[cc].reduce(
-// 			function (r, v, i){
-// 				if (cfn(v)){
-// 					cs.forEach(
-// 						function(c){
-// 							r[c] = r[c].concat(d[c][i]);
-// 						}
-// 					);
-// 				}
-// 				return r
-// 			},
-// 			keyCopy(d, Array)
-// 		)
-// 	}
-	
-// 	self = dataFrameView || extract(csvString);
-// 	self.columns = columns = Object.keys(self);
-// 	self.nrow = self[columns[0]].length;
-// 	self.ncol = self.columns.length;
-// 	self.data = function(){ return keySubset(this, this.columns) }
-// 	self.values = function(){ return transpose(this.data()) } 
-// 	self.where = function (exps){
-// 		// :: String, String || String
-// 		//
-// 		// if String, String, the first is interpreted as a 
-// 		// a conditional expressions for selecting across objects (rows)
-// 		// and can take the form column = String || JSON.stringify(Array)
-// 		// values in the columns is === the String or in case of Array is contained therein
-// 		// or the form Num : Num, in which case the range starting at the first Num and ending at the 
-// 		// second is returned.
-// 		// The second argument is interpreted as a column name or stringifyed array of column names
-// 		// if String, it is interpreted as a column argument
-// 		var args, view, viewCols, rowExp, colExp, isJSONArray;
-// 		args = asArray(arguments);
-// 		console.log(args.length);
-// 		rowExp = args.length > 1 ? args[0] : null; 
-// 		colExp = rowExp ? args[1] : args[0]; 
-// 		isJSONArray = /(\[([\w]+,?)+\])/;
-// 		view = this.data();
-// 		if (typeof(colExp) === 'string'){
-// 			if (isJSONArray.test(colExp)){
-// 				viewCols = JSON.parse(colExp);
-// 			} else{ 
-// 				viewCols = [colExp]
-// 			}
-// 		} else if (Array.isArray(colExp)) {
-// 			viewCols = colExp;
-// 		} else {
-// 			viewCols = this.columns;
-// 		}
-// 		if (rowExp){
-// 			if (rowExp.indexOf("=") > 0){
-// 				var expParts, col, val; 
-// 				expParts = rowExp.split('='); 
-// 				col = expParts[0];
-// 				val = expParts[1];
-// 				if (isJSONArray.test(val)){
-// 					view = filterRowsBy(view, col, checkEquals(JSON.parse(val)), viewCols);
-// 				}else{
-// 					view = filterRowsBy(view, col, checkEquals(val), viewCols);
-// 				}
-// 			} else if(rowExp.indexOf(":") > 0){
-// 				var expRows; 
-// 				expRows = rowExp.split(':');
-// 				view = getRows(view, Number(expRows[1]), Number(expRows[2]), viewCols);
-// 			}
-// 		}else{
-// 			view = keySubset(view, viewCols);
-// 		}
-		
-// 		return dataFrame(null, ops, view); 
-// 	}
-
-// 	self.values = 
-
-// 	return self 
-// }
-
-// utils.dataFrame = dataFrame;
-
 
 function unique(arr){
 	return Object.keys(arr.reduce(function findUunique(tmpObj, item){
@@ -619,9 +415,13 @@ function unSelect(menuEl){
 
 utils.unSelect = unSelect;
 
+function importText(importLink){
+	return importLink.import.querySelector('BODY').textContent
+}
+utils.importText = importText; 
 
 function jsonImport(importLink){
-	return JSON.parse(importLink.import.querySelector('BODY').textContent)
+	return JSON.parse(importText(importLink))
 }
 
 function safeParse(o){
@@ -636,9 +436,37 @@ function isJSONArray (str) {
 	return /(\[([\w]+,?)+\])/.test(str)
 };
 
+function csvArrToJSON(csvArr, noHeaders){
+	var headers, vals; 
+
+	if (noHeaders){ 
+		headers = range(csvArr[0]).map(
+			function (v){ 
+				return "X."+String(v)
+			}
+		);
+		vals = csvArr;
+	} else { 
+		headers = csvArr[0]; 
+		vals = csvArr.slice(1, csvArr.length);
+	}
+	return vals.map(
+		function (row){ 
+			return row.reduce(
+				function (acc, v, i){ 
+					acc[headers[i]] = v;
+					return acc
+				},
+				{}
+			)
+		}
+	)
+}
+
 utils.JSON = {
 	'import': jsonImport,
-	'isArray': isJSONArray
+	'isArray': isJSONArray,
+	'fromCSVArray': csvArrToJSON
 };
 
 // function testServer(name, testFiles, port){
