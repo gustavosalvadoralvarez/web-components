@@ -18,16 +18,22 @@ function duckType(o){
 	if (hasProperty(o, 'toExponential')){
 		return 'number'
 	}
+	if (o instanceof NodeList){
+		return 'nodeList'
+	}
 	return 'object'
 }
 
 utils.duckType = duckType;
 
 function asArray(thing){
+	console.log(duckType(thing))
 	switch(duckType(thing)){
 		case 'array':
 			return thing
 		case 'arguments':
+			return Array.prototype.slice.call(thing);
+		case 'nodeList': 
 			return Array.prototype.slice.call(thing);
 		default:
 			return [thing]
@@ -35,7 +41,6 @@ function asArray(thing){
 }
 
 utils.asArray = asArray; 
-
 
 function extensionName (flPath){
 	return flPath.split('.').slice(-1)[0]
@@ -121,6 +126,18 @@ function featurize(arr){
 }
 
 utils.featurize = featurize; 
+
+function car(arr){
+	return arr[0]
+}
+
+utils.car = car;
+
+function cdr(arr){ 
+	return arr.slice(1)
+}
+
+utils.cdr = cdr;
 
 function defeaturize(obj){
 	if (obj.values){

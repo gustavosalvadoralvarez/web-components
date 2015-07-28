@@ -14,23 +14,18 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
     <title>indexed-db Demo</title>
     <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
-    <link rel="import" href="../indexed-db-store.html">
+    <link rel="import" href="../indexed-db-store2.html">
+    <link rel="import" href="../indexed-db-view.html">
   </head>
   <body>
 
-    <p>An example of <code>&lt;indexed-db&gt;</code>:</p>
+    <indexed-db-store> 
+      <link rel="import" name="Clientes" class="source" href="../data/Clientes.csv"> 
+      <link rel="import" name="Clientes" class="schema" href="../data/Clientes.json"> 
 
-    <button>Say Something</button>
+    </indexed-db-store>
 
-    <indexed-db author='{"name": "Lord Meowser", "image": "http://placekitten.com/g/200/300"}' fancy>
-      <h2>Hello indexed-db</h2>
-    </indexed-db>
-
-    <script>
-      document.querySelector('button').addEventListener('click', function() {
-        alert(document.querySelector('indexed-db').sayHello('Hallo!'));
-      });
-    </script>
+    
 
   </body>
 </html>
