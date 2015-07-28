@@ -22,9 +22,16 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <indexed-db-store> 
       <link rel="import" name="Clientes" class="source" href="../data/Clientes.csv"> 
       <link rel="import" name="Clientes" class="schema" href="../data/Clientes.json"> 
-
     </indexed-db-store>
-
+    <script>
+      (function(w){
+        w.addEventListener('db-ready', 
+          function(){
+            console.log('Application database read!');
+          }
+        )
+      })(window);
+    </script>
     
 
   </body>

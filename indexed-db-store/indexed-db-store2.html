@@ -15,11 +15,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <script src="../ydn.db/dist/ydn.db-is-core-e-qry-dev.js "></script>
 
 <!--
-An element providing a solution to no problem in particular.
+An SQL service in the browser.
 
 Example:
 
-    <indexed-db></indexed-db>
+    <indexed-db-store></indexed-db-store>
 
 @demo
 -->
@@ -45,10 +45,10 @@ Example:
     is: 'indexed-db-store',
 
     properties: {
-
+      _db: { 
+        type: function () { return {} }
+      }
     },
-
-
     attached : function() {
       var self, db, srcs, dbSchema;
       self = this;
@@ -56,12 +56,15 @@ Example:
       db = new ydn.db.Storage(self.dbName(), self.generateDBSchema(srcs));
       db.addEventListener('ready', 
         function (event) {
-          var updated;
-          updated = event.getVersion() !== event.getOldVersion();
-          console.log(updated);
-          console.log(event.getOldVersion());
+          console.log("Initializing database...");
+          var updated, currVersion, prevVersion;
+          currVersion = event.getVersion();
+          prevVersion = event.getOldVersion();
+          updated = currVersion !== prevVersion;
+          console.log("Previous version: "+String(prevVersion));
+          console.log("Current version: "+String(currVersion));
           if (isNaN(event.getOldVersion())) {
-            console.log('Database connected with new schema...');
+            console.log('Populating new database...');
             console.log('Running ETL on sources...');
             async.eachSeries(
               srcs,
@@ -80,6 +83,7 @@ Example:
                         callback(err)
                         return 
                       }
+                      çonsole.log("Parsing "+srcName+" successful!");
                       var srcData, loadReq;
                       srcData = utils.JSON.fromCSVArray(res.data); 
                       console.log(db);
@@ -101,23 +105,27 @@ Example:
                   }
                 )
               },
-              function(err){
-                if (err){
-                  console.log(err);
+              function(e){
+                if (e){
+                  console.log(e);
                   return
                 }
                 console.log("ETL successful!");
               }
             );
-          }  else if(updated){ 
+          } else if(updated){ 
             console.log("Database loaded with new schema...");
-          } else {
+            //tmp implementation, reimplement with sniffer(?) ...//
+          }else {
             console.log('existing database connected');
           }
+          self.fire('db-ready');
+          window.dbReady = true;
+          window.addEventListener('db-query', self.provisionViews(db));
         }
       );
+      self._db = db;
     },
-
     gatherDataSources: function(){
       var self = this;
       return utils.asArray(self.querySelectorAll('.source'))
@@ -128,9 +136,11 @@ Example:
       return {
         stores: dataSources.map(
           function(el){
-            var srcName;
-            srcName = el.getAttribute('name');
-            return utils.JSON.import(self.querySelector('.schema[name="'+srcName+'"]'));
+            return utils.JSON.import(
+              self.querySelector(
+                '.schema[name="'+el.getAttribute('name')+'"]'
+              )
+            );
           }
         )
       } 
@@ -138,7 +148,6 @@ Example:
     dbName: function(){ 
       return document.querySelector("TITLE").textContent
     },
-
     sniffDataLinks: function(dataLinks){
       return dataLinks.map(utils.textContent).map(
         function(dtx){
@@ -153,8 +162,21 @@ Example:
 
         }
       )
+    },
+    provisionViews: function(db){
+      return function(e){
+        var view, viewSql;
+        view = e.target
+        viewSql = view.getAttribute('SQL');
+        console.log("Processing Sql query: \n\t"+viewSql);
+        db.executeSql(viewSQL).then(
+          function(viewData){ 
+            console.log("Sql query processed sucessfull!")
+            view.viewData = viewData;
+          }
+        );
+      }
     }
-
   });
 
 </script>

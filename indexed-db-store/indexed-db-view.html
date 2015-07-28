@@ -39,44 +39,16 @@ Example:
     is: 'indexed-db-view',
 
     properties: {
-      TABLE:{ 
+      SQL:{
         type: String,
-        reflectToAttribute: true
-      },
-      WHERE:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      COND:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      VAL:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      AND:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      OR:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      COND2:{ 
-        type: String,
-        reflectToAttribute: true
-      },
-      VAL2:{ 
-        type: String,
-        reflectToAttribute: true
+        reflectToAttribute: true,
+        notify: true
       },
       viewData: {
         type: Array,
         notify: true
       }
     },
-
     attached: function(){ 
       var self;
       self = this; 
@@ -86,8 +58,9 @@ Example:
             self.fire('db-query');
           }
         )
-      }
-      self.fire('db-query'); 
+      } else { 
+        self.fire('db-query');
+      } 
     }
   });
 
