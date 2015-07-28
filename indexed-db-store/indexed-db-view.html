@@ -55,12 +55,18 @@ Example:
       if (!window.dbReady){ 
         window.addEventListener('db-ready', 
           function(){
-            self.fire('db-query');
+            self.query();
           }
         )
       } else { 
-        self.fire('db-query');
+        self.query(); 
       } 
+      self.on('SQL-changed', self.query);
+    },
+    query: function(){
+      var self;
+      self = this;
+      self.fire('db-query');
     }
   });
 
