@@ -185,6 +185,14 @@ function range(ops, args){
 	)
 }
 
+function attributeMap(attr){ 
+	return function(el){ 
+		return el.getAttribute('name')
+	}
+}
+
+utils.attributeMap = attributeMap;
+
 utils.range = range;
 
 function repeat(val, times){

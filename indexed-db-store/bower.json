@@ -24,7 +24,8 @@
     "async": "~1.4.0",
     "papaparse": "~4.1.1",
     "dexie": "~1.1.0",
-    "ydn.db": "~1.0.3"
+    "ydn.db": "~1.0.3",
+    "highland": "~2.5.1"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
