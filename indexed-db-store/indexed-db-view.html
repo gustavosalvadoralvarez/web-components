@@ -39,7 +39,7 @@ Example:
     is: 'indexed-db-view',
 
     properties: {
-      SQL:{
+      sql:{
         type: String,
         reflectToAttribute: true,
         notify: true
@@ -47,12 +47,14 @@ Example:
       viewData: {
         type: Array,
         notify: true
-      }
+      }, 
     },
     attached: function(){ 
+      console.log("indexed-db-view attached..."); 
       var self;
       self = this; 
       if (!window.dbReady){ 
+        console.log("Database not ready...");
         window.addEventListener('db-ready', 
           function(){
             self.query();
@@ -61,9 +63,10 @@ Example:
       } else { 
         self.query(); 
       } 
-      self.on('SQL-changed', self.query);
+      self.addEventListener('sql-changed', self.query);
     },
     query: function(){
+      console.log("Sending query request..."); 
       var self;
       self = this;
       self.fire('db-query');
