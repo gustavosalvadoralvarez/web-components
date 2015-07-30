@@ -185,6 +185,8 @@ function range(ops, args){
 	)
 }
 
+utils.range = range;
+
 function attributeMap(attr){ 
 	return function(el){ 
 		return el.getAttribute('name')
@@ -193,7 +195,6 @@ function attributeMap(attr){
 
 utils.attributeMap = attributeMap;
 
-utils.range = range;
 
 function repeat(val, times){
 	return range(times+1).map(returnTo(val))
@@ -472,7 +473,8 @@ function csvArrToJSON(csvArr, noHeaders){
 		);
 		vals = csvArr;
 	} else { 
-		headers = csvArr[0]; 
+		headers = csvArr[0].map(function (v) { return v.replace(/ /g, "_")}); 
+		console.log(headers);
 		vals = csvArr.slice(1, csvArr.length);
 	}
 	return vals.map(
@@ -494,25 +496,25 @@ utils.JSON = {
 	'fromCSVArray': csvArrToJSON
 };
 
-// function testServer(name, testFiles, port){
-// 	var flRoutes; 
-// 	flRoutes = Object.keys(testFiles); 
-// 	require('http').createServer(
-// 		function (req, res){
-// 			var routeFl, reqURL;
-// 			routeFl = flRoutes.filter(function(k){ return treq.indexOf(k) !== -1 })[0];
-// 			reqURL = req.url; 
-// 			if (routeFl){
-// 				res.statusCode = 200; 
-// 				require('fs').createReadStream(routeFl).pipe(res); 
-// 			} else {
-// 				res.statusCode = 404;
-// 				res.end("Wtf Willis?");
-// 			}
+function testServer(name, testFiles, port){
+	var flRoutes; 
+	flRoutes = Object.keys(testFiles); 
+	require('http').createServer(
+		function (req, res){
+			var routeFl, reqURL;
+			routeFl = flRoutes.filter(function(k){ return treq.indexOf(k) !== -1 })[0];
+			reqURL = req.url; 
+			if (routeFl){
+				res.statusCode = 200; 
+				require('fs').createReadStream(routeFl).pipe(res); 
+			} else {
+				res.statusCode = 404;
+				res.end("Wtf Willis?");
+			}
 			
-// 		}
-// 	)
-// }
+		}
+	)
+}
 
 
 if (typeof module !== 'undefined' && module.exports){

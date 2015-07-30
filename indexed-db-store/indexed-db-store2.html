@@ -90,7 +90,7 @@ Example:
           function ETL(src, callback){ 
             console.log("Parsing: "+src.getAttribute('name')+"..."); 
             var srcTxt, srcName;
-            srcTxt = utils.importText(src); 
+            srcTxt = utils.importText(src).replace(/"/g, ''); 
             srcName = src.getAttribute('name'); 
             Papa.parse(utils.importText(src), { complete: load });
             function load(res){ 
@@ -175,6 +175,10 @@ Example:
             console.log("Sql query processed sucessfully!");
             console.log(viewData);
             view.viewData = viewData;
+          },
+          function (e){ 
+            console.log('View provisioning error: ');
+            console.log(e);
           }
         );
       }
